@@ -9,6 +9,20 @@ import { imageOrPlaceholder } from '@/lib/blocks/utils';
 import { DynamicForm } from '@/components/forms/dynamic-form';
 import type { BlockData } from '@/lib/blocks/utils';
 
+// Resolve a lucide icon by name — supports both PascalCase ('FlaskConical')
+// and kebab-case ('flask-conical') so admins can type either.
+const LUCIDE_LIB = Lucide as unknown as Record<string, React.ComponentType<{ className?: string }>>;
+function getLucideIcon(name?: string) {
+  if (!name) return null;
+  if (LUCIDE_LIB[name]) return LUCIDE_LIB[name];
+  // kebab-case → PascalCase  (e.g. 'flask-conical' → 'FlaskConical', 'building-2' → 'Building2')
+  const pascal = name
+    .split('-')
+    .map((p) => p.charAt(0).toUpperCase() + p.slice(1))
+    .join('');
+  return LUCIDE_LIB[pascal] ?? null;
+}
+
 // ---------------------------------------------------------------------------
 
 export function HeroBlock({ data }: { data: BlockData }) {
@@ -85,7 +99,7 @@ export function FeaturesBlock({ data }: { data: BlockData }) {
       </div>
       <div className={`grid gap-6 ${cols === 1 ? 'sm:grid-cols-1' : cols === 2 ? 'sm:grid-cols-2' : cols === 4 ? 'sm:grid-cols-2 lg:grid-cols-4' : 'sm:grid-cols-2 lg:grid-cols-3'}`}>
         {items.map((it, i) => {
-          const Icon = (Lucide as unknown as Record<string, any>)[it.icon] ?? null;
+          const Icon = getLucideIcon(it.icon);
           return (
             <Card key={i} className="border-border/60 hover:shadow-lg transition-shadow fade-up" style={{ animationDelay: `${i * 80}ms` }}>
               <CardContent className="p-6">
@@ -381,7 +395,7 @@ export function ContactBlock({ data }: { data: BlockData }) {
       {data.title && <h2 className="text-3xl md:text-4xl font-bold text-center mb-12">{data.title}</h2>}
       <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 mb-8">
         {items.map((it, i) => {
-          const Icon = (Lucide as unknown as Record<string, any>)[it.icon];
+          const Icon = getLucideIcon(it.icon);
           return (
             <Card key={i} className="fade-up" style={{ animationDelay: `${i * 60}ms` }}>
               <CardContent className="p-6 flex items-start gap-4">

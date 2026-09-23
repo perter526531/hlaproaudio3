@@ -6,6 +6,17 @@ import { defaultDataFor } from '../src/lib/blocks/types';
 
 const db = new PrismaClient();
 
+// 内置品牌图片（随仓库分发，public/uploads/gen/）
+// 种子数据直接引用这些路径，部署后立即可见，无需重新上传
+const IMG = {
+  heroStage: '/uploads/gen/hero-stage.png',
+  amplifier: '/uploads/gen/product-amplifier.png',
+  subwoofer: '/uploads/gen/product-subwoofer.png',
+  lineArray: '/uploads/gen/product-linearray.png',
+  mixer: '/uploads/gen/product-mixer.png',
+  mic: '/uploads/gen/product-mic.png',
+};
+
 async function main() {
   // ---- Site settings ----
   const settings: Record<string, string> = {
@@ -103,12 +114,49 @@ async function main() {
     isHome: true,
     navOrder: 0,
     blocks: [
-      { type: 'hero', title: 'Hero' },
+      {
+        type: 'hero',
+        title: 'Hero',
+        data: {
+          ...defaultDataFor('hero'),
+          eyebrow: '为声音而生',
+          title: '为声音而生，为舞台而造',
+          subtitle: '专业音响系统，深受全球80多个国家场馆、艺术家和集成商信赖。',
+          primaryCta: { label: '查看产品', href: '/products' },
+          secondaryCta: { label: '联系我们', href: '/contact' },
+          background: IMG.heroStage,
+          align: 'left',
+          minHeight: 560,
+        },
+      },
       { type: 'marquee', title: '特性滚动', data: defaultDataFor('marquee') },
       { type: 'features', title: '为什么选择我们' },
       { type: 'stats', title: '数据见证' },
-      { type: 'productCategories', title: '应用领域' },
-      { type: 'products', title: '明星产品' },
+      {
+        type: 'productCategories',
+        title: '应用领域',
+        data: {
+          ...defaultDataFor('productCategories'),
+          items: [
+            { title: '扬声器', description: '为各类场馆与应用打造的专业扬声器。', image: IMG.lineArray, href: '/products?cat=speaker' },
+            { title: '功放', description: '集成 DSP 的巡演级功放。', image: IMG.amplifier, href: '/products?cat=amplifier' },
+            { title: '调音台与处理器', description: '数字调音台与信号处理器。', image: IMG.mixer, href: '/products?cat=mixer' },
+            { title: '无线与话筒', description: '无线系统与话筒。', image: IMG.mic, href: '/products?cat=wireless' },
+          ],
+        },
+      },
+      {
+        type: 'products',
+        title: '明星产品',
+        data: {
+          ...defaultDataFor('products'),
+          items: [
+            { name: 'DA-4.800 DSP 功放', desc: '4×2000W 数字功放，带DSP与Dante', image: IMG.amplifier, featured: true, href: '' },
+            { name: 'SB-218 低音炮', desc: '双18寸大功率低音炮', image: IMG.subwoofer, featured: true, href: '' },
+            { name: 'VA-12 线阵列', desc: '12寸三分频高输出线阵列模块', image: IMG.lineArray, featured: true, href: '' },
+          ],
+        },
+      },
       {
         type: 'split',
         title: '研发实力',
@@ -117,7 +165,7 @@ async function main() {
           title: '研发实力',
           subtitle: '50余位工程师组成的研发团队',
           body: '覆盖声学、电子、软件与结构设计，为产品线持续创新提供动力。我们的 R&D 实验室配备 Klippel 分析仪、AP 音频测试仪与混响室，对每一代产品进行全维度的声学验证。',
-          image: '',
+          image: IMG.heroStage,
           imagePosition: 'right',
           cta: { label: '了解更多', href: '/about' },
         },
@@ -177,13 +225,36 @@ async function main() {
           subtitle: '扬声器 · 功放 · 调音台与处理器 · 无线与话筒',
           primaryCta: { label: '在线咨询', href: '/contact' },
           secondaryCta: { label: '', href: '' },
-          background: '',
+          background: IMG.lineArray,
           align: 'center',
           minHeight: 380,
         },
       },
-      { type: 'productCategories', title: '应用领域' },
-      { type: 'products', title: '明星产品' },
+      {
+        type: 'productCategories',
+        title: '应用领域',
+        data: {
+          ...defaultDataFor('productCategories'),
+          items: [
+            { title: '扬声器', description: '为各类场馆与应用打造的专业扬声器。', image: IMG.lineArray, href: '/products?cat=speaker' },
+            { title: '功放', description: '集成 DSP 的巡演级功放。', image: IMG.amplifier, href: '/products?cat=amplifier' },
+            { title: '调音台与处理器', description: '数字调音台与信号处理器。', image: IMG.mixer, href: '/products?cat=mixer' },
+            { title: '无线与话筒', description: '无线系统与话筒。', image: IMG.mic, href: '/products?cat=wireless' },
+          ],
+        },
+      },
+      {
+        type: 'products',
+        title: '明星产品',
+        data: {
+          ...defaultDataFor('products'),
+          items: [
+            { name: 'DA-4.800 DSP 功放', desc: '4×2000W 数字功放，带DSP与Dante', image: IMG.amplifier, featured: true, href: '' },
+            { name: 'SB-218 低音炮', desc: '双18寸大功率低音炮', image: IMG.subwoofer, featured: true, href: '' },
+            { name: 'VA-12 线阵列', desc: '12寸三分频高输出线阵列模块', image: IMG.lineArray, featured: true, href: '' },
+          ],
+        },
+      },
       { type: 'cta', title: 'CTA' },
     ],
   });
