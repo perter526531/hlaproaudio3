@@ -134,3 +134,33 @@ Verification (Agent Browser):
 Stage Summary:
 - Admin backend is now auth-protected. Default creds admin/audiocenter2025 (change in .env before deploy).
 - Block editor UX now makes it obvious that every block is editable — visible hint text + bordered active state.
+
+---
+Task ID: 7
+Agent: owner (main)
+Task: One-click deployment package for 宝塔 (BT Panel) + git commit
+
+Work Log:
+- Created deployment artifacts:
+  * .env.example — env var template (DATABASE_URL, ADMIN_USERNAME, ADMIN_PASSWORD, NEXTAUTH_SECRET, NEXTAUTH_URL)
+  * deploy.sh — idempotent one-click deploy script (checks Node 18+, prefers bun falls back to npm, validates .env, installs deps, pushes DB schema, seeds on first run, builds standalone, starts PM2, health-checks on :3000, prints 宝塔 next-step instructions)
+  * ecosystem.config.js — PM2 config (single instance fork mode, autorestart, 512MB restart cap, log files)
+  * Dockerfile — multi-stage build (builder + runtime, openssl+curl, persistent volumes for db/uploads/logs, healthcheck)
+  * docker-compose.yml — orchestrate with ./data/db and ./data/uploads volumes
+  * .dockerignore — keep image small
+  * DEPLOYMENT.md — comprehensive 宝塔 guide: 3 deploy methods (PM2+Nginx recommended / Docker / plain Node), step-by-step with copy-paste commands, backup/migration table, FAQ
+- Updated package.json:
+  * name: audiocenter-cms, version 1.0.0
+  * start: NODE_ENV=production node .next/standalone/server.js (portable to plain Node on 宝塔, no bun required for prod)
+  * added db:seed and deploy scripts
+- Rewrote .gitignore cleanly: ignore .env (keep .env.example), db/*.db, public/uploads/* (keep gen/ brand images), logs/, upload/, download/, *.log, .zscripts/dev.pid
+- Untracked sensitive files: git rm --cached .env, db/custom.db, .zscripts/dev.pid (removed from index, kept on disk)
+- Verified deploy.sh: bash -n syntax OK; missing-.env branch correctly copies from .env.example and prompts user to edit
+- Fixed ecosystem.config.js: shell-style # comments → JS // comments (was causing ESLint parse error)
+- Lint: 0 errors 0 warnings. Dev server still 200 on home, 307 on unauth /admin.
+- Git: committed all 139 files (single feat commit 0347a66) — complete CMS site + deployment package + auth. Working tree clean. No remote configured yet (user adds their own).
+
+Stage Summary:
+- One-click deploy on 宝塔: git clone → cp .env.example .env → edit 3 vars → bash deploy.sh → 宝塔 add site + reverse proxy to :3000 + SSL. Done.
+- Two deploy methods documented: PM2+Nginx (native, recommended) and Docker Compose (containerized).
+- All code committed to local git repo; user needs to add remote (git remote add origin <url>) and push (git push -u origin main).
