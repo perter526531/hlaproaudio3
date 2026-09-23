@@ -1,9 +1,6 @@
 // This is your Prisma schema file,
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -13,20 +10,154 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model User {
+/// A CMS-managed page (Home, About, Products, etc.)
+model Page {
+  id          String   @id @default(cuid())
+  slug        String   @unique // route slug, e.g. "home", "about", "products"
+  title       String
+  subtitle    String?
+  description String?
+  status      String   @default("published") // published | draft
+  isHome      Boolean  @default(false)
+  showInNav   Boolean  @default(true)
+  navOrder    Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  blocks Block[]
+
+  @@index([status])
+}
+
+/// A content block belonging to a page. `type` references the block registry.
+/// `data` is a JSON-encoded object whose shape depends on `type`.
+model Block {
   id        String   @id @default(cuid())
-  email     String   @unique
-  name      String?
+  pageId    String
+  type      String // hero | features | stats | products | cta | text | image | gallery | form | contact | news | split | faq ...
+  title     String?  // optional admin-facing label
+  order     Int      @default(0)
+  data      String   @default("{}") // JSON string
+  hidden    Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  page Page @relation(fields: [pageId], references: [id], onDelete: Cascade)
+
+  @@index([pageId, order])
+}
+
+/// Navigation menus (e.g. "main", "footer").
+model Menu {
+  id        String   @id @default(cuid())
+  slug      String   @unique // "main" | "footer"
+  title     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  items MenuItem[]
+}
+
+model MenuItem {
+  id       String @id @default(cuid())
+  menuId   String
+  label    String
+  url      String
+  parentId String?
+  order    Int    @default(0)
+  openNew  Boolean @default(false)
+
+  menu   Menu     @relation(fields: [menuId], references: [id], onDelete: Cascade)
+  parent MenuItem? @relation("MenuItemTree", fields: [parentId], references: [id], onDelete: SetNull)
+  children MenuItem[] @relation("MenuItemTree")
+
+  @@index([menuId, order])
+}
+
+/// A user-defined form (contact form, inquiry form, etc.)
+model Form {
+  id          String   @id @default(cuid())
+  slug        String   @unique
+  title       String
+  description String?
+  submitLabel String?  @default("提交")
+  successMsg  String?  @default("感谢您的提交，我们会尽快与您联系！")
+  notifyEmail String?
+  status      String   @default("published") // published | draft
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  fields      FormField[]
+  submissions FormSubmission[]
+}
+
+/// A field on a form. `config` is JSON (placeholder, required, options[], rows, min, max...).
+model FormField {
+  id        String @id @default(cuid())
+  formId    String
+  label     String
+  name      String  // machine name used as JSON key in submission
+  type      String  // text | textarea | email | phone | select | radio | checkbox | number | url | date | file | consent | rating
+  required  Boolean @default(false)
+  order     Int     @default(0)
+  config    String  @default("{}") // JSON
+  createdAt DateTime @default(now())
+
+  form Form @relation(fields: [formId], references: [id], onDelete: Cascade)
+
+  @@index([formId, order])
+}
+
+model FormSubmission {
+  id        String   @id @default(cuid())
+  formId    String
+  data      String   @default("{}") // JSON
+  ip        String?
+  ua        String?
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  form Form @relation(fields: [formId], references: [id], onDelete: Cascade)
+
+  @@index([formId, createdAt])
+}
+
+/// Image asset library (uploaded or referenced).
+model Image {
+  id        String   @id @default(cuid())
+  url       String   // served path, e.g. /uploads/abc.jpg
+  filename  String
+  alt       String?
+  width     Int?
+  height    Int?
+  size      Int?     // bytes
+  mimeType  String?
+  tags      String?  // comma-separated
+  source    String   @default("upload") // upload | external
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
 
-model Post {
+/// Global key/value site settings.
+model SiteSetting {
+  id    String @id @default(cuid())
+  key   String @unique
+  value String
+}
+
+/// News / blog articles.
+model NewsArticle {
   id        String   @id @default(cuid())
+  slug      String   @unique
   title     String
-  content   String?
-  published Boolean  @default(false)
-  authorId  String
+  excerpt   String?
+  body      String   @default("") // plain text or simple HTML
+  cover     String?
+  category  String   @default("企业新闻")
+  status    String   @default("published")
+  publishedAt DateTime @default(now())
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@index([status, publishedAt])
 }

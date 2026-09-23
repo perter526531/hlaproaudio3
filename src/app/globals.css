@@ -120,3 +120,69 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Pro-audio brand accent: warm amber/orange instead of default neutral primary.
+   Only overrides the primary token so shadcn components stay consistent. */
+:root {
+  --primary: oklch(0.62 0.18 38);
+  --primary-foreground: oklch(0.985 0 0);
+  --ring: oklch(0.62 0.18 38);
+  --accent: oklch(0.95 0.05 60);
+  --radius: 0.5rem;
+}
+.dark {
+  --primary: oklch(0.7 0.17 42);
+  --primary-foreground: oklch(0.145 0 0);
+  --ring: oklch(0.7 0.17 42);
+}
+
+/* ---------- Marquee ---------- */
+@keyframes marquee {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+.animate-marquee {
+  animation: marquee linear infinite;
+  will-change: transform;
+}
+.marquee-slow { animation-duration: 40s; }
+.marquee-normal { animation-duration: 22s; }
+.marquee-fast { animation-duration: 12s; }
+.marquee-container:hover .animate-marquee {
+  animation-play-state: paused;
+}
+
+/* ---------- Custom scrollbar ---------- */
+.scrollbar-thin::-webkit-scrollbar { width: 8px; height: 8px; }
+.scrollbar-thin::-webkit-scrollbar-track { background: transparent; }
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background: oklch(0.85 0 0);
+  border-radius: 4px;
+}
+.dark .scrollbar-thin::-webkit-scrollbar-thumb { background: oklch(0.35 0 0); }
+.scrollbar-thin { scrollbar-width: thin; }
+
+/* ---------- Generic helpers ---------- */
+.container-prose { max-width: 56rem; margin-inline: auto; }
+.container-page { max-width: 80rem; margin-inline: auto; padding-inline: 1rem; }
+@media (min-width: 640px) { .container-page { padding-inline: 1.5rem; } }
+@media (min-width: 1024px) { .container-page { padding-inline: 2rem; } }
+
+.hero-bg {
+  background: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 60%, #262626 100%);
+}
+.text-balance { text-wrap: balance; }
+.text-pretty { text-wrap: pretty; }
+
+/* fade-in for blocks */
+@keyframes fadeUp { from { opacity: 0; transform: translateY(12px);} to {opacity:1; transform:none;} }
+.fade-up { animation: fadeUp .6s ease-out both; }
+
+/* link underline hover */
+.nav-link { position: relative; }
+.nav-link::after {
+  content: ''; position: absolute; left: 0; right: 100%; bottom: -4px;
+  height: 2px; background: var(--primary); transition: right .25s ease;
+}
+.nav-link:hover::after, .nav-link[aria-current="true"]::after { right: 0; }
+

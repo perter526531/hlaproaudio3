@@ -1,31 +1,23 @@
-'use client'
+import { notFound } from 'next/navigation';
+import { db } from '@/lib/db';
+import { SiteShell } from '@/components/site/shell';
+import { BlockRenderer } from '@/components/blocks/block-renderer';
+import { parseBlockData } from '@/lib/blocks/utils';
 
-export default function Home() {
+export const dynamic = 'force-dynamic';
+
+export default async function HomePage() {
+  const page = await db.page.findFirst({
+    where: { slug: 'home' },
+    include: { blocks: { where: { hidden: false }, orderBy: { order: 'asc' } } },
+  });
+  if (!page) return notFound();
+
   return (
-    <div style={{
-      display: 'flex',
-      flexDirection: 'column',
-      alignItems: 'center',
-      justifyContent: 'center',
-      minHeight: '100vh',
-      gap: '2rem',
-      padding: '1rem'
-    }}>
-      <div style={{
-        position: 'relative',
-        width: '6rem',
-        height: '6rem'
-      }}>
-        <img
-          src="/logo.svg"
-          alt="Z.ai Logo"
-          style={{
-            width: '100%',
-            height: '100%',
-            objectFit: 'contain'
-          }}
-        />
-      </div>
-    </div>
-  )
+    <SiteShell>
+      {page.blocks.map((b) => (
+        <BlockRenderer key={b.id} type={b.type} data={parseBlockData(b.data, b.type)} />
+      ))}
+    </SiteShell>
+  );
 }
