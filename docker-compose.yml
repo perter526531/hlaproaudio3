@@ -1,0 +1,28 @@
+# ───────────────────────────────────────────────────────────
+# AudioCenter CMS — Docker Compose 编排
+# 用法：
+#   cp .env.example .env  （编辑 ADMIN_PASSWORD / NEXTAUTH_SECRET）
+#   docker compose up -d --build
+# ───────────────────────────────────────────────────────────
+services:
+  audiocenter:
+    build: .
+    container_name: audiocenter
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    env_file: .env
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - DATABASE_URL=file:/app/db/custom.db
+    volumes:
+      - ./data/db:/app/db           # 数据库持久化
+      - ./data/uploads:/app/public/uploads  # 上传图片持久化
+      - ./logs:/app/logs
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:3000/"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
