@@ -4,10 +4,16 @@
 #
 # 用法：
 #   1. SSH 登录服务器
-#   2. cd /www/wwwroot/audiocenter  （或你 clone 的目录）
+#   2. cd /www/wwwroot/hlaproaudio  （或你 clone 的目录）
 #   3. bash deploy.sh               # 首次部署 / 拉取更新后重新部署
 #
 # 本脚本幂等可重复执行：会自动 install / build / 推数据库 / 重启 PM2。
+# 改进点：
+#   - 从 .env 读 DATABASE_URL，按实际 DB 文件是否存在决定是否灌种子
+#     （不再依赖固定位置的 flag 文件，DB 放哪都行）
+#   - 自动确保 DB 父目录存在
+#   - build 后自动拷贝 .env 到 .next/standalone/（防 next build 重建目录丢失）
+#   - 不覆盖用户自定义的 ecosystem.config.js（已 gitignore，用户拥有）
 # ───────────────────────────────────────────────────────────
 set -euo pipefail
 
@@ -33,6 +39,14 @@ if [ "$NODE_MAJOR" -lt 18 ]; then
   exit 1
 fi
 ok "Node: $(node -v)"
+
+# 国内服务器访问 npm 官方源不稳定，自动切淘宝镜像（仅当当前源是官方源时）
+CURRENT_REGISTRY=$(npm config get registry 2>/dev/null || echo "")
+if echo "$CURRENT_REGISTRY" | grep -q "registry.npmjs.org"; then
+  warn "检测到 npm 使用官方源，国内访问可能超时，自动切换到淘宝镜像..."
+  npm config set registry https://registry.npmmirror.com
+  ok "npm 源: https://registry.npmmirror.com"
+fi
 
 # 包管理器：优先 bun，否则 npm
 if command -v bun &>/dev/null; then
@@ -61,6 +75,21 @@ if grep -q "请改成强密码" .env 2>/dev/null; then
 fi
 ok ".env 已配置"
 
+# 从 .env 解析 DATABASE_URL，确定实际 DB 文件路径（用户可能改成绝对路径）
+DB_URL=$(grep -E "^DATABASE_URL=" .env | head -1 | cut -d= -f2- | tr -d '"' | tr -d "'")
+DB_FILE="${DB_URL#file:}"   # 去掉 file: 前缀
+DB_FILE="${DB_FILE#//}"      # 去掉可能的 // 前缀（绝对路径）
+if [ -z "$DB_FILE" ] || [ "$DB_FILE" = "$DB_URL" ]; then
+  # DATABASE_URL 不是 file: 形式（可能是 mysql: 等），用默认路径做兜底
+  DB_FILE="db/custom.db"
+fi
+ok "数据库文件路径: $DB_FILE"
+
+# 确保 DB 父目录存在（绝对/相对路径都支持）
+DB_DIR="$(dirname "$DB_FILE")"
+mkdir -p "$DB_DIR" logs
+ok "DB 目录已确保存在: $DB_DIR"
+
 # ── 3. 安装依赖 ───────────────────────────────────────────
 log "安装依赖 (这可能需要几分钟)..."
 if [ "$PKG" = "bun" ]; then
@@ -71,8 +100,7 @@ fi
 ok "依赖安装完成"
 
 # ── 4. 推送数据库 schema（首次会自动建表）────────────────
-log "初始化数据库..."
-mkdir -p db logs
+log "初始化数据库 schema..."
 if [ "$PKG" = "bun" ]; then
   bun run db:push
   bun run db:generate
@@ -82,19 +110,26 @@ else
 fi
 ok "数据库 schema 已同步"
 
-# ── 5. 首次灌入种子数据（仅当数据库为空时） ────────────────
-SEED_FLAG="db/.seeded"
-if [ ! -f "$SEED_FLAG" ]; then
-  log "首次运行，灌入种子数据（页面/菜单/表单/新闻/示例图片）..."
+# ── 5. 首次灌入种子数据（仅当 DB 文件不存在或为空时） ───────
+NEED_SEED=0
+if [ ! -f "$DB_FILE" ]; then
+  NEED_SEED=1
+  warn "DB 文件不存在，将灌入种子数据"
+elif [ ! -s "$DB_FILE" ]; then
+  NEED_SEED=1
+  warn "DB 文件为空，将灌入种子数据"
+fi
+
+if [ "$NEED_SEED" = "1" ]; then
+  log "灌入种子数据（页面/菜单/表单/新闻/示例图片）..."
   if [ "$PKG" = "bun" ]; then
     bun run scripts/seed.ts
   else
     npx --yes tsx scripts/seed.ts
   fi
-  touch "$SEED_FLAG"
   ok "种子数据已灌入"
 else
-  ok "已存在种子数据，跳过"
+  ok "DB 已有数据，跳过种子（如需重置：rm -f $DB_FILE && bash deploy.sh）"
 fi
 
 # ── 6. 构建生产产物 ──────────────────────────────────────
@@ -105,6 +140,13 @@ else
   npm run build
 fi
 ok "构建完成 → .next/standalone/server.js"
+
+# build 后把 .env 拷贝到 standalone 目录（next build 每次会重建此目录，导致手动放的 .env 丢失）
+# 这样即使不用 PM2 env 注入，standalone server 也能读到
+if [ -f ".env" ] && [ -d ".next/standalone" ]; then
+  cp .env .next/standalone/.env
+  ok "已同步 .env → .next/standalone/.env"
+fi
 
 # ── 7. 启动 / 重启 PM2 ──────────────────────────────────
 if ! command -v pm2 &>/dev/null; then
@@ -117,15 +159,29 @@ if ! command -v pm2 &>/dev/null; then
 fi
 ok "PM2: $(pm2 --version)"
 
+# 如果用户没有自定义 ecosystem.config.js，从 example 拷一份
+if [ ! -f "ecosystem.config.js" ] && [ -f "ecosystem.config.example.js" ]; then
+  warn "未发现 ecosystem.config.js，从 example 模板拷贝一份..."
+  cp ecosystem.config.example.js ecosystem.config.js
+  ok "已生成 ecosystem.config.js（如需自定义 env，直接编辑此文件，不会被 git 覆盖）"
+fi
+
 log "启动/重启进程..."
-pm2 startOrReload ecosystem.config.js --update-env 2>/dev/null || pm2 start ecosystem.config.js --update-env
+if [ -f "ecosystem.config.js" ]; then
+  pm2 startOrReload ecosystem.config.js --update-env 2>/dev/null || pm2 start ecosystem.config.js --update-env
+else
+  # 兜底：直接启动 standalone server（env 从 .env 或系统环境变量读）
+  pm2 start .next/standalone/server.js --name audiocenter --update-env 2>/dev/null \
+    || pm2 reload audiocenter --update-env 2>/dev/null \
+    || pm2 start .next/standalone/server.js --name audiocenter
+fi
 pm2 save 2>/dev/null || true
 ok "进程已守护"
 
 # 健康检查
 log "健康检查..."
 sleep 2
-if curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:3000/ | grep -q "^2"; then
+if curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:3000/ 2>/dev/null | grep -q "^2"; then
   ok "应用已启动：http://127.0.0.1:3000/"
 else
   warn "应用可能还在启动中，10 秒后再次检查..."
@@ -146,7 +202,7 @@ ${C_GREEN}═══════════════════════�
 
   应用本地地址：  http://127.0.0.1:3000/
   管理后台：      http://127.0.0.1:3000/admin
-  管理员账号：    $(grep ^ADMIN_USERNAME .env | cut -d= -f2)
+  数据库文件：    $DB_FILE
 
 ${C_YELLOW}下一步在宝塔面板完成外网访问：${C_RST}
 
@@ -165,8 +221,11 @@ ${C_CYAN}常用运维命令：${C_RST}
   pm2 stop audiocenter        停止应用
   bash deploy.sh              拉取代码更新后重新部署
 
+${C_CYAN}重置数据库（清空所有数据，慎用）：${C_RST}
+  rm -f $DB_FILE && bash deploy.sh
+
 ${C_CYAN}备份：${C_RST}
-  - 数据库：db/custom.db  （SQLite 单文件，直接 cp 备份）
+  - 数据库：$DB_FILE  （SQLite 单文件，直接 cp 备份）
   - 上传图片：public/uploads/  （整目录打包）
 
 EOF

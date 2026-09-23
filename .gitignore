@@ -63,6 +63,9 @@ db/.seeded
 # PM2 / 运行日志
 logs/
 
+# PM2 进程配置 —— 用户自定义，不进 git（首次部署从 example 拷贝）
+ecosystem.config.js
+
 # 用户上传的图片（运行时生成）
 public/uploads/*
 # 但保留内置示例品牌图（种子数据引用）
