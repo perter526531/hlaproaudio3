@@ -98,3 +98,39 @@ Stage Summary:
 - Image resource library powers every image field in the block editor and form editor — supports both local upload (stored in /public/uploads) and external URL references.
 - Forms are fully admin-managed (create form, add/edit fields with 12 field types, view submissions, mark read) and render dynamically on any public page via the 'form' block type.
 - Deployment target: CyberPanel (OpenLiteSpeed) with Node.js via SSH + PM2, SQLite file DB, static uploads in /public/uploads.
+
+---
+Task ID: 6
+Agent: owner (main)
+Task: Add admin authentication (NextAuth) + fix block editor expand/collapse UX
+
+Work Log:
+- Question 1 (auth): Set up NextAuth.js v4 with Credentials Provider.
+  - Added src/lib/auth.ts (authOptions, JWT session 7d, callbacks for role/name).
+  - Added src/app/api/auth/[...nextauth]/route.ts (route handler).
+  - Added src/middleware.ts: protects /admin/* (redirect to /admin/login) and /api/admin/* (return 401 JSON). Login page + auth routes excluded.
+  - Added src/app/admin/login/page.tsx (dark hero-bg login card, username/password, error display, callbackUrl support).
+  - Added src/components/admin/session-provider.tsx (SessionProvider wrapper).
+  - Updated src/app/admin/layout.tsx to wrap children in AdminSessionProvider.
+  - Updated src/components/admin/shell.tsx AdminHeader: added user dropdown (avatar initial + name + chevron) with "访问前台" and "退出登录" items; uses useSession + signOut.
+  - .env: added ADMIN_USERNAME=admin, ADMIN_PASSWORD=audiocenter2025, NEXTAUTH_SECRET, NEXTAUTH_URL (documented to change before deploy).
+- Question 2 (block editor UX): The blocks WERE always editable, but the accordion was collapsed by default with no affordance.
+  - Updated src/app/admin/pages/[id]/page.tsx AccordionTrigger:
+    * Added isOpen detection; expanded blocks get border-primary/50 + shadow.
+    * Added small hint text under the block title: "点击此处展开编辑内容" (collapsed) / "点击此处收起" (expanded).
+    * Added cursor-pointer + group hover.
+    * Added title attributes to action buttons (上移/下移).
+  - Added a top instruction line under "内容块 (N)" heading: "点击任意块标题可展开编辑其内容字段；右侧按钮可排序 / 显隐 / 复制 / 删除".
+
+Verification (Agent Browser):
+- Unauthenticated /admin → 307 redirect to /admin/login?callbackUrl=/admin ✓
+- Unauthenticated /api/admin/pages → 401 JSON {error, needsAuth:true} ✓
+- /admin/login renders login form; login with admin/audiocenter2025 → redirects to /admin dashboard ✓
+- Authenticated API returns data ✓
+- User dropdown shows "admin" with 退出登录; logout → redirects back to /admin/login ✓
+- Block editor: collapsed blocks show "点击此处展开编辑内容"; clicking expands and shows all fields (verified on 滚动横幅 → 词条 + 速度 fields appear); expanded block shows "点击此处收起" ✓
+- Lint: 0 errors, 0 warnings. Dev log: no errors.
+
+Stage Summary:
+- Admin backend is now auth-protected. Default creds admin/audiocenter2025 (change in .env before deploy).
+- Block editor UX now makes it obvious that every block is editable — visible hint text + bordered active state.

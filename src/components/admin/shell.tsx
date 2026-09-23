@@ -3,12 +3,14 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useState } from 'react';
+import { signOut, useSession } from 'next-auth/react';
 import {
   LayoutDashboard, FileText, FormInput, Image as ImageIcon, Settings,
-  Newspaper, Menu as MenuIcon, Volume2, ExternalLink, X,
+  Newspaper, Menu as MenuIcon, Volume2, ExternalLink, X, LogOut, ChevronDown,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger, SheetTitle, SheetClose } from '@/components/ui/sheet';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
 
 const NAV = [
@@ -56,6 +58,8 @@ export function AdminSidebar({ mobile = false, onNavigate }: { mobile?: boolean;
 
 export function AdminHeader({ title, action }: { title: string; action?: React.ReactNode }) {
   const [open, setOpen] = useState(false);
+  const { data: session } = useSession();
+  const userName = session?.user?.name || 'admin';
   return (
     <header className="sticky top-0 z-40 flex h-14 md:h-16 items-center gap-3 border-b border-border bg-background/95 backdrop-blur px-4 md:px-6">
       <div className="lg:hidden">
@@ -77,6 +81,32 @@ export function AdminHeader({ title, action }: { title: string; action?: React.R
       </div>
       <h1 className="text-base md:text-lg font-semibold flex-1 truncate">{title}</h1>
       {action}
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="ghost" size="sm" className="gap-2">
+            <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-primary/10 text-primary text-xs font-semibold uppercase">
+              {userName.charAt(0)}
+            </span>
+            <span className="hidden sm:inline text-sm font-medium">{userName}</span>
+            <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-44">
+          <DropdownMenuLabel>已登录</DropdownMenuLabel>
+          <DropdownMenuLabel className="font-normal text-muted-foreground -mt-2">{userName}</DropdownMenuLabel>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem asChild>
+            <Link href="/" target="_blank"><ExternalLink className="h-3.5 w-3.5 mr-2" /> 访问前台</Link>
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem
+            className="text-destructive focus:text-destructive"
+            onClick={() => signOut({ callbackUrl: '/admin/login' })}
+          >
+            <LogOut className="h-3.5 w-3.5 mr-2" /> 退出登录
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
     </header>
   );
 }

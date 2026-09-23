@@ -194,8 +194,11 @@ export default function PageEditorPage({ params }: { params: Promise<{ id: strin
           </Card>
 
           {/* Blocks list */}
-          <div className="flex items-center justify-between">
-            <h2 className="text-base font-semibold">内容块 ({blocks.length})</h2>
+          <div className="flex items-center justify-between flex-wrap gap-2">
+            <div>
+              <h2 className="text-base font-semibold">内容块 ({blocks.length})</h2>
+              <p className="text-xs text-muted-foreground mt-0.5">点击任意块标题可展开编辑其内容字段；右侧按钮可排序 / 显隐 / 复制 / 删除</p>
+            </div>
             <AddBlockDialog onAdd={addBlock} />
           </div>
 
@@ -207,9 +210,10 @@ export default function PageEditorPage({ params }: { params: Promise<{ id: strin
             <Accordion value={openBlock} onValueChange={setOpenBlock} type="single" className="space-y-3">
               {blocks.map((b, i) => {
                 const meta = getBlockTypeMeta(b.type);
+                const isOpen = openBlock === b.id;
                 return (
-                  <AccordionItem key={b.id} value={b.id} className="border border-border rounded-lg bg-background overflow-hidden">
-                    <AccordionTrigger className="hover:no-underline px-4 py-3 [&>svg]:hidden">
+                  <AccordionItem key={b.id} value={b.id} className={`border rounded-lg bg-background overflow-hidden transition-colors ${isOpen ? 'border-primary/50 shadow-sm' : 'border-border'}`}>
+                    <AccordionTrigger className="hover:no-underline px-4 py-3 [&>svg]:hidden cursor-pointer group">
                       <div className="flex items-center gap-3 w-full">
                         <GripVertical className="h-4 w-4 text-muted-foreground shrink-0" />
                         <div className="flex-1 text-left">
@@ -218,10 +222,13 @@ export default function PageEditorPage({ params }: { params: Promise<{ id: strin
                             <span className="text-sm font-medium">{b.title || meta?.label}</span>
                             {b.hidden && <Badge variant="secondary" className="text-[10px]">隐藏</Badge>}
                           </div>
+                          <div className="text-[11px] text-muted-foreground mt-0.5">
+                            {isOpen ? '点击此处收起' : '点击此处展开编辑内容'}
+                          </div>
                         </div>
                         <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
-                          <Button variant="ghost" size="icon" className="h-7 w-7" disabled={i === 0} onClick={() => move(b.id, -1)}><ChevronUp className="h-3.5 w-3.5" /></Button>
-                          <Button variant="ghost" size="icon" className="h-7 w-7" disabled={i === blocks.length - 1} onClick={() => move(b.id, 1)}><ChevronDown className="h-3.5 w-3.5" /></Button>
+                          <Button variant="ghost" size="icon" className="h-7 w-7" disabled={i === 0} onClick={() => move(b.id, -1)} title="上移"><ChevronUp className="h-3.5 w-3.5" /></Button>
+                          <Button variant="ghost" size="icon" className="h-7 w-7" disabled={i === blocks.length - 1} onClick={() => move(b.id, 1)} title="下移"><ChevronDown className="h-3.5 w-3.5" /></Button>
                           <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => updateBlock(b.id, (x) => ({ ...x, hidden: !x.hidden }), { hidden: !b.hidden })}>
                             {b.hidden ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
                           </Button>
