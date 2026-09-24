@@ -403,12 +403,12 @@ async function main() {
   // ---- News articles ----
   await db.newsArticle.deleteMany({});
   const newsSeed = [
-    { slug: 'getshow-2025', title: 'GETSHOW 2025 广州展圆满落幕', excerpt: 'AudioCenter 携全新 VA 系列线阵列亮相 GETSHOW 2025，受到国内外集成商热烈反响。', category: '展会资讯', body: 'GETSHOW 2025（广州国际演艺设备及智能演出展）于 5 月 8 日至 11 日在广州举行。AudioCenter 展位现场展示了全新 VA 系列线阵列、DA-4.800 DSP 功放及 SU-9100 系列数字会议系统。展会期间，来自国内外剧院、场馆及集成商代表到访展位，现场气氛热烈。' },
-    { slug: 'va-series-launch', title: 'VA 系列线阵列全球首发', excerpt: '面向中大型场馆的 12 寸三分频高输出线阵列 VA-12 正式发布。', category: '新品发布', body: 'VA-12 是 AudioCenter 历时三年研发的全新旗舰线阵列模块，采用 12 寸三分频设计，单只最大声压级可达 145dB。配套 flybar 与吊挂件满足快速部署需求。' },
-    { slug: 'stadium-case-2024', title: '某市体育场扩声系统交付', excerpt: 'AudioCenter 为某市体育场提供全套扩声系统，覆盖 5 万座席。', category: '案例分享', body: '项目采用 24 只 VA-12 线阵列作主扩，配套 SB-218 低音炮与 DA-4.800 DSP 功放，全场 SPL 均匀度 ±3dB，达到 J 高标准。' },
-    { slug: 'rd-lab-2024', title: '声学实验室升级 Klippel 分析仪', excerpt: 'R&D 实验室完成新一轮仪器升级，进一步提升研发能力。', category: '企业新闻', body: '本次升级的 Klippel R&D 系统能够对扬声器进行全维度的非线性、共振与指向性分析，为产品研发提供更精确的数据支撑。' },
-    { slug: 'global-partner-2024', title: '与欧洲分销商签订战略合作', excerpt: 'AudioCenter 正式签约欧洲顶级分销商，加速全球布局。', category: '企业新闻', body: '本次合作将使 AudioCenter 产品覆盖 12 个新增欧洲国家，进一步深化全球化服务网络。' },
-    { slug: 'training-2024', title: '工程师技术培训在京举办', excerpt: '面向集成商的系统调试与方案设计培训会圆满结束。', category: '企业新闻', body: '本次培训涵盖系统设计、DSP 调试与现场声学测量，参与工程师获得 AudioCenter 认证证书。' },
+    { slug: 'getshow-2025', title: 'GETSHOW 2025 广州展圆满落幕', excerpt: 'AudioCenter 携全新 VA 系列线阵列亮相 GETSHOW 2025，受到国内外集成商热烈反响。', category: '展会资讯', cover: IMG.heroStage, body: 'GETSHOW 2025（广州国际演艺设备及智能演出展）于 5 月 8 日至 11 日在广州举行。AudioCenter 展位现场展示了全新 VA 系列线阵列、DA-4.800 DSP 功放及 SU-9100 系列数字会议系统。展会期间，来自国内外剧院、场馆及集成商代表到访展位，现场气氛热烈。' },
+    { slug: 'va-series-launch', title: 'VA 系列线阵列全球首发', excerpt: '面向中大型场馆的 12 寸三分频高输出线阵列 VA-12 正式发布。', category: '新品发布', cover: IMG.lineArray, body: 'VA-12 是 AudioCenter 历时三年研发的全新旗舰线阵列模块，采用 12 寸三分频设计，单只最大声压级可达 145dB。配套 flybar 与吊挂件满足快速部署需求。' },
+    { slug: 'stadium-case-2024', title: '某市体育场扩声系统交付', excerpt: 'AudioCenter 为某市体育场提供全套扩声系统，覆盖 5 万座席。', category: '案例分享', cover: IMG.subwoofer, body: '项目采用 24 只 VA-12 线阵列作主扩，配套 SB-218 低音炮与 DA-4.800 DSP 功放，全场 SPL 均匀度 ±3dB，达到 J 高标准。' },
+    { slug: 'rd-lab-2024', title: '声学实验室升级 Klippel 分析仪', excerpt: 'R&D 实验室完成新一轮仪器升级，进一步提升研发能力。', category: '企业新闻', cover: IMG.amplifier, body: '本次升级的 Klippel R&D 系统能够对扬声器进行全维度的非线性、共振与指向性分析，为产品研发提供更精确的数据支撑。' },
+    { slug: 'global-partner-2024', title: '与欧洲分销商签订战略合作', excerpt: 'AudioCenter 正式签约欧洲顶级分销商，加速全球布局。', category: '企业新闻', cover: IMG.mic, body: '本次合作将使 AudioCenter 产品覆盖 12 个新增欧洲国家，进一步深化全球化服务网络。' },
+    { slug: 'training-2024', title: '工程师技术培训在京举办', excerpt: '面向集成商的系统调试与方案设计培训会圆满结束。', category: '企业新闻', cover: IMG.mixer, body: '本次培训涵盖系统设计、DSP 调试与现场声学测量，参与工程师获得 AudioCenter 认证证书。' },
   ];
   for (const n of newsSeed) {
     await db.newsArticle.create({
@@ -418,7 +418,7 @@ async function main() {
         excerpt: n.excerpt,
         body: n.body,
         category: n.category,
-        cover: '',
+        cover: n.cover,
         status: 'published',
         publishedAt: new Date(2025, 4, 7, 10, 0, 0),
       },

@@ -255,7 +255,10 @@ function NewsListClient({ limit, title, subtitle, showMore, moreLabel, moreHref 
           {items.map((n: any, i) => (
             <Link key={n.id} href={`/news/${n.slug}`} className="group block fade-up" style={{ animationDelay: `${i * 80}ms` }}>
               <Card className="overflow-hidden h-full hover:shadow-lg transition-shadow">
-                <div className="aspect-video bg-muted" />
+                <div className="aspect-video overflow-hidden bg-muted">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={imageOrPlaceholder(n.cover, n.title)} alt={n.title} className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                </div>
                 <CardContent className="p-5">
                   <div className="text-xs text-muted-foreground">{n.date}</div>
                   <h3 className="mt-2 font-semibold line-clamp-2 group-hover:text-primary transition-colors">{n.title}</h3>
