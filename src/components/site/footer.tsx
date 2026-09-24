@@ -60,7 +60,6 @@ export function SiteFooter({ config, items }: { config: SiteConfig; items: NavIt
         <div className="mt-12 pt-6 border-t border-white/10 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-neutral-500">
           <span>© {new Date().getFullYear()} {config.brand}. 版权所有</span>
           <span>{config.icp}</span>
-          <Link href="/admin" className="hover:text-white">管理后台</Link>
         </div>
       </div>
     </footer>

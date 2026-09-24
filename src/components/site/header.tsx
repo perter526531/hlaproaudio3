@@ -54,9 +54,6 @@ export function SiteHeader({ brand, tagline, items }: { brand: string; tagline: 
           <Button asChild variant="outline" size="sm">
             <Link href="/contact">在线咨询</Link>
           </Button>
-          <Button asChild size="sm">
-            <Link href="/admin">管理后台</Link>
-          </Button>
         </div>
 
         <div className="lg:hidden">
@@ -85,11 +82,6 @@ export function SiteHeader({ brand, tagline, items }: { brand: string; tagline: 
                 <SheetClose asChild>
                   <Button asChild variant="outline">
                     <Link href="/contact">在线咨询</Link>
-                  </Button>
-                </SheetClose>
-                <SheetClose asChild>
-                  <Button asChild>
-                    <Link href="/admin">管理后台</Link>
                   </Button>
                 </SheetClose>
               </div>

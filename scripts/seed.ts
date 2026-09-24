@@ -26,7 +26,7 @@ async function main() {
     phone: '400-888-0000',
     email: 'info@audiocenter.example',
     address: '广州市高新技术开发区音响大道88号',
-    icp: '粤ICP备0000000号',
+    icp: '粤ICP备2025394425号',
     wechat: 'AudioCenter_Official',
     whatsapp: '+86 138 0000 0000',
     facebook: 'https://facebook.com',
