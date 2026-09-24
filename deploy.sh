@@ -110,18 +110,18 @@ else
 fi
 ok "数据库 schema 已同步"
 
-# ── 5. 首次灌入种子数据（仅当 DB 文件不存在或为空时） ───────
-NEED_SEED=0
-if [ ! -f "$DB_FILE" ]; then
-  NEED_SEED=1
-  warn "DB 文件不存在，将灌入种子数据"
-elif [ ! -s "$DB_FILE" ]; then
-  NEED_SEED=1
-  warn "DB 文件为空，将灌入种子数据"
-fi
+# ── 5. 首次灌入种子数据（仅当 DB 无数据时） ───────────────
+# 注意：不能用「文件是否存在/非空」判断，因为 prisma db push 会创建
+# 有表结构但 0 行数据的 DB 文件。必须查 Page 表行数。
+log "检查是否需要灌入种子数据..."
+PAGE_COUNT=$(node -e "
+const { PrismaClient } = require('@prisma/client');
+const db = new PrismaClient();
+db.page.count().then(c => { process.stdout.write(String(c)); return db.\$disconnect(); }).catch(() => { process.stdout.write('0'); return db.\$disconnect(); });
+" 2>/dev/null || echo "error")
 
-if [ "$NEED_SEED" = "1" ]; then
-  log "灌入种子数据（页面/菜单/表单/新闻/示例图片）..."
+if [ "$PAGE_COUNT" = "error" ] || [ "$PAGE_COUNT" = "0" ]; then
+  warn "DB 无页面数据 (Page 表 $PAGE_COUNT 行)，将灌入种子数据..."
   if [ "$PKG" = "bun" ]; then
     bun run scripts/seed.ts
   else
@@ -129,7 +129,7 @@ if [ "$NEED_SEED" = "1" ]; then
   fi
   ok "种子数据已灌入"
 else
-  ok "DB 已有数据，跳过种子（如需重置：rm -f $DB_FILE && bash deploy.sh）"
+  ok "DB 已有 $PAGE_COUNT 个页面，跳过种子（如需重置：rm -f $DB_FILE && bash deploy.sh）"
 fi
 
 # ── 5.5 修复 SQLite 文件权限（防止 PM2 以 www 用户跑时读 OK 写失败） ──
