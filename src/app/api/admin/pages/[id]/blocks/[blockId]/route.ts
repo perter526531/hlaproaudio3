@@ -13,8 +13,18 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   if (body.title !== undefined) data.title = body.title;
   if (body.hidden !== undefined) data.hidden = !!body.hidden;
   if (body.order !== undefined) data.order = Number(body.order);
-  const updated = await db.block.update({ where: { id: blockId }, data });
-  return NextResponse.json({ block: { ...updated, data: safeParse(updated.data) } });
+  try {
+    const updated = await db.block.update({ where: { id: blockId }, data });
+    return NextResponse.json({ block: { ...updated, data: safeParse(updated.data) } });
+  } catch (e: any) {
+    const msg = e?.message || String(e);
+    const isReadOnly = /readonly|read.?only|disk I\/O|SQLITE_READONLY/i.test(msg);
+    return NextResponse.json({
+      error: isReadOnly
+        ? '数据库写入失败：SQLite 权限不足。请在服务器执行 chown -R www:www <DB路径>'
+        : `保存失败：${msg}`,
+    }, { status: 500 });
+  }
 }
 
 // DELETE /api/admin/pages/:id/blocks/:blockId

@@ -132,6 +132,36 @@ else
   ok "DB 已有数据，跳过种子（如需重置：rm -f $DB_FILE && bash deploy.sh）"
 fi
 
+# ── 5.5 修复 SQLite 文件权限（防止 PM2 以 www 用户跑时读 OK 写失败） ──
+# prisma db push / seed 以 root 跑，DB 文件 owner 是 root；
+# PM2 进程以 www 跑 → 能读不能写 → 表单/内容块保存报错
+log "检查/修复 SQLite 文件权限..."
+# 检测 PM2 进程用户
+PM2_USER=""
+if command -v pm2 &>/dev/null; then
+  PM2_USER=$(pm2 jlist 2>/dev/null | grep -o '"user":"[^"]*"' | head -1 | cut -d'"' -f4 || echo "")
+fi
+if [ -z "$PM2_USER" ]; then
+  PM2_USER="www"  # 宝塔默认
+  warn "未检测到 PM2 用户，假设为 $PM2_USER"
+fi
+
+if [ -f "$DB_FILE" ]; then
+  CURRENT_OWNER=$(stat -c '%U' "$DB_FILE" 2>/dev/null || stat -f '%Su' "$DB_FILE" 2>/dev/null || echo "")
+  if [ "$CURRENT_OWNER" != "$PM2_USER" ] && [ -n "$CURRENT_OWNER" ]; then
+    warn "DB 文件 owner=$CURRENT_OWNER，但 PM2 以 $PM2_USER 运行 → 自动修复权限..."
+    chown -R "$PM2_USER":"$PM2_USER" "$DB_DIR" 2>/dev/null && ok "已 chown -R $PM2_USER:$PM2_USER $DB_DIR" || {
+      # chown 可能因权限失败，兜底用 chmod
+      chmod -R 775 "$DB_DIR" 2>/dev/null && ok "已 chmod 775 $DB_DIR"
+    }
+  else
+    ok "DB 文件权限正常 (owner=$CURRENT_OWNER)"
+  fi
+  # 确保 DB 文件和目录对 PM2 用户可写
+  chmod 664 "$DB_FILE" 2>/dev/null || true
+  chmod 775 "$DB_DIR" 2>/dev/null || true
+fi
+
 # ── 6. 构建生产产物 ──────────────────────────────────────
 log "构建生产版本 (Next.js standalone)..."
 if [ "$PKG" = "bun" ]; then

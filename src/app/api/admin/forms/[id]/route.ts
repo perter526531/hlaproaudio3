@@ -31,19 +31,23 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     const exists = await db.form.findUnique({ where: { slug: newSlug } });
     if (exists) return NextResponse.json({ error: 'slug 已存在' }, { status: 409 });
   }
-  const form = await db.form.update({
-    where: { id },
-    data: {
-      slug: newSlug,
-      title: body.title ?? cur.title,
-      description: body.description ?? cur.description,
-      submitLabel: body.submitLabel ?? cur.submitLabel,
-      successMsg: body.successMsg ?? cur.successMsg,
-      status: body.status ?? cur.status,
-      notifyEmail: body.notifyEmail ?? cur.notifyEmail,
-    },
-  });
-  return NextResponse.json({ form });
+  try {
+    const form = await db.form.update({
+      where: { id },
+      data: {
+        slug: newSlug,
+        title: body.title ?? cur.title,
+        description: body.description ?? cur.description,
+        submitLabel: body.submitLabel ?? cur.submitLabel,
+        successMsg: body.successMsg ?? cur.successMsg,
+        status: body.status ?? cur.status,
+        notifyEmail: body.notifyEmail ?? cur.notifyEmail,
+      },
+    });
+    return NextResponse.json({ form });
+  } catch (e: any) {
+    return NextResponse.json({ error: `保存失败：${e?.message || String(e)}` }, { status: 500 });
+  }
 }
 
 // DELETE /api/admin/forms/:id
