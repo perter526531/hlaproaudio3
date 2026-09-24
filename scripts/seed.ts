@@ -425,6 +425,29 @@ async function main() {
     });
   }
 
+  // ---- Image library（把内置品牌图注册到 Image 表） ──────
+  await db.image.deleteMany({});
+  const imageSeed = [
+    { url: IMG.heroStage,     filename: 'hero-stage.png',           alt: '舞台演出场景',     tags: '品牌,首页' },
+    { url: IMG.amplifier,     filename: 'product-amplifier.png',     alt: 'DA-4.800 DSP 功放',  tags: '产品,功放' },
+    { url: IMG.subwoofer,     filename: 'product-subwoofer.png',     alt: 'SB-218 低音炮',     tags: '产品,低音炮' },
+    { url: IMG.lineArray,     filename: 'product-linearray.png',     alt: 'VA-12 线阵列',       tags: '产品,线阵列' },
+    { url: IMG.mixer,         filename: 'product-mixer.png',         alt: '数字调音台',         tags: '产品,调音台' },
+    { url: IMG.mic,           filename: 'product-mic.png',           alt: '无线话筒',           tags: '产品,话筒' },
+  ];
+  for (const img of imageSeed) {
+    await db.image.create({
+      data: {
+        url: img.url,
+        filename: img.filename,
+        alt: img.alt,
+        tags: img.tags,
+        source: 'upload',
+        mimeType: 'image/png',
+      },
+    });
+  }
+
   console.log('Seed complete.');
 }
 
